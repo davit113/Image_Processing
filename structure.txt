@@ -1,0 +1,14 @@
+my thoughts:
+
+1. main creates windows and binds functions of other modules to buttons
+2. captureImage upon pressing button opens camera and captures image. // (stores it to variable, returns which then main should display)
+3. findTarget takes img and does something which finds target type and target location and returns it //  maybe like {type, location}
+4. calculate distance calculates distance and and displays it next to object (inside image)
+5. targetSize calculates target size(pixel count (probably)) and  displays it next to object (inside image)
+
+
+notes:
+1. 4 and 5 could be combined but for now let it be.
+2. we should aim main module to be short, with <100 lines of code, 
+    so i am thinking of creating anothen module which creates windows, and binds functions. main should be just same definitons and start catalist
+
