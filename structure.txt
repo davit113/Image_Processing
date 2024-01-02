@@ -11,4 +11,7 @@ notes:
 1. 4 and 5 could be combined but for now let it be.
 2. we should aim main module to be short, with <100 lines of code, 
     so i am thinking of creating anothen module which creates windows, and binds functions. main should be just same definitons and start catalist
-
+3. code folder should be in as one module. It shoud not need 4 import like right now :  import calcDistance as dis
+                                                                                        import captureImage as cap
+                                                                                        import findTarget as ftar
+                                                                                        import targetSize as tsize
