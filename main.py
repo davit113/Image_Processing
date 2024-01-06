@@ -5,9 +5,8 @@ import cv2
 import functools
 import threading
 import code as mPy
-
-
 from tkinter import *
+
 
 def action(val: int):
     print(val)
@@ -16,7 +15,6 @@ def action(val: int):
     elif val == 2: mPy.targetSize()
     elif val ==3: mPy.calcDistance()
     else: print("error!"); exit
-
 
 
 def main():
@@ -28,7 +26,6 @@ def main():
     window.iconphoto(True, icon)  
 
     btnArr = []
-
     def _():
         count = 0
         for bn in cfg.BUTTON_NAMES:
@@ -60,7 +57,6 @@ def vaitFun(cap,):
         if  cv2.waitKey(1) == ord('q'):
             cap.release()
             cv2.destroyAllWindows()
-            
 
 
 def testFoo():
@@ -81,21 +77,12 @@ def testFoo():
     cap.release()
     cv2.destroyAllWindows()
 
-    
-    
 def foo():
     wait_thread = threading.Thread(target=vaitFun, args=(cap,10))
     wait_thread.start()
     wait_thread.join()
 
 
-
-
 if(__name__ == '__main__'):
     testFoo();    
     # foo()
-
-
-
-
-

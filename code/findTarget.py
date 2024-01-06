@@ -1,7 +1,7 @@
 """ 
 In HSV colorspace
     yeloww hue=50~70 saturation=210~250 // in cv2 hue is about = 25~33 and saturation= 200~250
-    blue   hue=185~200 saturation=175~235  //// in cv2 hue is about = 92~100 and saturation= 175~240
+    blue   hue=185~200 saturation=175~235  // in cv2 hue is about = 92~100 and saturation= 175~240
  """
 
 """ 
