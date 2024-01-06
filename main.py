@@ -4,20 +4,17 @@ import numpy as np
 import cv2
 import functools
 import threading
-import calcDistance as dis
-import captureImage as cap
-import findTarget as ftar
-import targetSize as tsize
+import code as mPy
 
 
 from tkinter import *
 
 def action(val: int):
     print(val)
-    if val == 0:  cap.captureImage() 
-    elif val == 1: ftar.findTarget()
-    elif val == 2: tsize.targetSize()
-    elif val ==3: dis.calcDistance()
+    if val == 0:  mPy.captureImage() 
+    elif val == 1: mPy.findTarget()
+    elif val == 2: mPy.targetSize()
+    elif val ==3: mPy.calcDistance()
     else: print("error!"); exit
 
 
@@ -69,14 +66,17 @@ def vaitFun(cap,):
 def testFoo():
     
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_HUE, 2)
+
     # wait_thread = threading.Thread(target=vaitFun, args=(cap,))
     # wait_thread.start()
-
+    
     while True:
         ret, frame = cap.read()
-        newFrame = ftar.findTarget(frame)
-        cv2.imshow('farme', newFrame)
-        if  cv2.waitKey(1) == ord('q'):
+        newFrame = mPy.findTarget(frame)
+        cv2.imshow('farme', frame)
+        # cv2.imshow('farme', newFrame)
+        if  cv2.waitKey(100) == ord('q'):
             break
     cap.release()
     cv2.destroyAllWindows()

@@ -16,26 +16,33 @@ import captureImage
 SCALEFACTOR = 1.0
 
 from matplotlib import pyplot as plt
-
+extra =15
 
 
 def cleanImage(img):
     SCALEFACTOR = 1
     # img = cv2.imread('code/new_test_img.jpg')
     img = cv2.resize(img, (0,0), fx=SCALEFACTOR, fy=SCALEFACTOR)
+    img = cv2.bilateralFilter(img, 15, 75, 75)
+    # img = cv2.GaussianBlur(img,(5,5),0)
+    cv2.imshow('blurred',img)
 
     hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+    cv2.imshow('hsv', hsv)
 
     hue1,sat1,v = cv2.split(hsv)
 
+    # cv2.imshow("hue1",hue1)
+    # cv2.imshow("sat1",sat1)
+
     """ double threshholding for yelow color """
-    _, maskHue1 = cv2.threshold(hue1, 25, 255, cv2.THRESH_BINARY)
-    _, maskHue2 = cv2.threshold(hue1, 33, 255, cv2.THRESH_BINARY_INV)
+    _, maskHue1 = cv2.threshold(hue1, 25 - extra, 255, cv2.THRESH_BINARY)
+    _, maskHue2 = cv2.threshold(hue1, 33 + extra, 255, cv2.THRESH_BINARY_INV)
     maskYelowHue= cv2.bitwise_and(maskHue1, maskHue2)
 
     """ double threshholding for yelow saturation"""
-    _, maskSat1 = cv2.threshold(sat1, 200, 255, cv2.THRESH_BINARY)
-    _, maskSat2 = cv2.threshold(sat1, 245, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
+    _, maskSat1 = cv2.threshold(sat1, 200 - extra, 255, cv2.THRESH_BINARY)
+    _, maskSat2 = cv2.threshold(sat1, 245 + extra, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
     maskYelowSat = cv2.bitwise_and(maskSat1, maskSat2)
     
 
@@ -43,13 +50,13 @@ def cleanImage(img):
     # cv2.imshow('finalYelow', final_yelow_mask_image)
 
     """ double threshholding for blue color """
-    _, maskHue1 = cv2.threshold(hue1, 92, 255, cv2.THRESH_BINARY)
-    _, maskHue2 = cv2.threshold(hue1, 100, 255, cv2.THRESH_BINARY_INV)
+    _, maskHue1 = cv2.threshold(hue1, 92 - extra, 255, cv2.THRESH_BINARY)
+    _, maskHue2 = cv2.threshold(hue1, 100 + extra, 255, cv2.THRESH_BINARY_INV)
     maskBlueHue= cv2.bitwise_and(maskHue1, maskHue2)
 
     """ double threshholding for blue saturation"""
-    _, maskSat1 = cv2.threshold(sat1, 175, 255, cv2.THRESH_BINARY)
-    _, maskSat2 = cv2.threshold(sat1, 240, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
+    _, maskSat1 = cv2.threshold(sat1, 175 - extra, 255, cv2.THRESH_BINARY)
+    _, maskSat2 = cv2.threshold(sat1, 240 + extra, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
     maskBlueSat = cv2.bitwise_and(maskSat1, maskSat2)
     final_blue_mask_image = cv2.bitwise_and(maskBlueHue, maskBlueSat)
 
@@ -83,7 +90,7 @@ def findTarget(img):
     counter = 0
     for contour in contours:
         counter+=1
-        approx = cv2.approxPolyDP(contour, 0.001* cv2.arcLength(contour, True), True)
+        approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)
         if(cv2.contourArea(contour) < 1000):
             continue
 
@@ -92,7 +99,7 @@ def findTarget(img):
         cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
         x = approx.ravel()[0]
         y = approx.ravel()[1] - 5
-        if len(approx) == 3:
+        if len(approx) < 30:
             cv2.putText(img, "triangle" +var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.1, (0, 0, 0),1)
         else:
             cv2.putText(img, "circle"+ var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 0),1)
