@@ -45,3 +45,10 @@ def filterBinary(thrash):
     return  cv2.dilate(thrash, structuringElement, iterations=2)
 
 
+
+def evalDistance(points, objType):{
+    
+}
+
+
+

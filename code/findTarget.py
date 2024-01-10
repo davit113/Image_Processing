@@ -14,14 +14,24 @@ YELOW_COLORS_UP   = [35, 255, 255]
 BLUE_COLORS_DOWN = [90, 140, 20]
 BLUE_COLORS_UP   = [110, 255, 255]
 
-TOLERANCE_FOR_CIRCLE = 0.93
-TOLERANCE_FOR_TRIANGLE = 0.96
+TOLERANCE_FOR_CIRCLE = 0.90
+TOLERANCE_FOR_TRIANGLE = 0.90
+
+
+""" on 2592x1944 picture, with scale=0.25
+
+    1. distance=1m circleAreaBlue=[5565,5605,5600,5550] circleAreaYelow=[5933,5946] triangleArea=[3310,3226]
+
+    2  distance=2m circleAreaBlue=[1498,1509,1515,1480,1514] , circleAreaYelow~= [1332(bad!),1394(bad!)], triangleArea=[814,811,823]
+                                        should be around 1400,                                       
+ """
 
 
 import numpy as np
 import cv2
 import time
 from math import pi
+import math
 
 
 import code.filtering as myFiltr
@@ -61,7 +71,7 @@ def cleanImage(img):
     return yelBlueMask
     return [final_yelow_mask_image, final_blue_mask_image]
 
-def findTarget(img, mode=0):
+def findTarget(img, mode=0, distance=False):
     thrash = cleanImage(img)
     cv2.imshow("Cleaned", thrash)
     # cv2.waitKey(10000) 
@@ -85,14 +95,16 @@ def findTarget(img, mode=0):
 
         area = pi * radius**2
 
+        # f = "{:.3f}".format(math.float_number)
+
         if area * TOLERANCE_FOR_CIRCLE <  conturArea:
             findSomething = True
             cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
-            cv2.putText(img, f"TRIANGLE\{len(contour)}", (x-80, y+20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 0, 0),1)
+            cv2.putText(img, f"CIR: {conturArea},dis={math.sqrt(5600/conturArea):.2f}M;", (x-80, y-30), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 0, 200),1)
         if size * TOLERANCE_FOR_TRIANGLE < conturArea:
             findSomething = True
             cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
-            cv2.putText(img, f"CIRCLE\{len(contour)}", (x-80, y+20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 0, 0),1)
+            cv2.putText(img, f"TR: {conturArea},dis={(math.sqrt(3300/conturArea)):.2f}M;", (x-80, y), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 200, 0),1)
 
     if not  findSomething:
         cv2.putText(img, "nothing here...", (100, 100), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 0),10)
@@ -126,3 +138,6 @@ def findAndDrawTriangle(img):
 
 def findAndDrawCircle(img):
     findTarget(img,2)
+
+def findDistance(img):
+    findTarget(img,3)

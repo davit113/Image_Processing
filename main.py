@@ -26,9 +26,13 @@ class main:
         self.toggle_button = tk.Button(self.root, text="Toggle Objects", command=self.toggle_objects)
         self.toggle_button.pack(side=tk.LEFT, padx=5)
 
+        self.toggle_button = tk.Button(self.root, text="Toggle Distance", command=self.find_distance)
+        self.toggle_button.pack(side=tk.LEFT, padx=5)
+
         self.is_streaming = False
         self.is_triangle_enabled = False
         self.is_circle_enabled = False
+        self.is_distance_enabled = False
 
         self.update()
         self.root.mainloop()
@@ -48,6 +52,10 @@ class main:
         if not self.is_streaming: return
         self.is_circle_enabled = not self.is_circle_enabled
 
+    def find_distance(self):
+        if not self.is_streaming: return
+        self.is_distance_enabled = not self.is_distance_enabled
+
     def toggle_objects(self):
         if not self.is_streaming: return
         if self.is_circle_enabled or self.is_triangle_enabled:
@@ -63,6 +71,8 @@ class main:
             code.findTarget.findAndDrawTriangle(frame)
         if self.is_circle_enabled:
             code.findTarget.findAndDrawCircle(frame)
+        if self.is_distance_enabled:
+            code.findTarget.findDistance()
 
     def update(self):
         if self.is_streaming:
