@@ -7,7 +7,7 @@ import cv2
 """ all filtering of BGR camptured image """
 def filterBGR(img):
     img = cv2.bilateralFilter(img, 15, 75, 75)
-    # img = cv2.GaussianBlur(img,(5,5),0)
+    img = cv2.GaussianBlur(img,(11,11),0)
     pass
 
 

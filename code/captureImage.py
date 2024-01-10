@@ -2,9 +2,7 @@ import numpy as np
 import cv2
 import time
 
-
 """  """
-
 def  captureImage(): 
     #raspberry pi camera captures 2592x1944 picture. So I think scale factor should be 0.25 for better performance, it will give us 648x486 image.
     #r.n. my laptop camera resolution is ~480p. so I set scale factor 1.

@@ -14,10 +14,14 @@ YELOW_COLORS_UP   = [35, 255, 255]
 BLUE_COLORS_DOWN = [90, 140, 20]
 BLUE_COLORS_UP   = [110, 255, 255]
 
+TOLERANCE_FOR_CIRCLE = 0.93
+TOLERANCE_FOR_TRIANGLE = 0.96
+
 
 import numpy as np
 import cv2
 import time
+from math import pi
 
 
 import code.filtering as myFiltr
@@ -29,6 +33,8 @@ def cleanImage(img):
     SCALEFACTOR = 1
     img = cv2.resize(img, (0,0), fx=SCALEFACTOR, fy=SCALEFACTOR)
     myFiltr.filterBGR(img)
+
+    # cv2.imshow("BGRCleaned", img)
 
     hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
     myFiltr.filterHSV(hsv)
@@ -43,6 +49,11 @@ def cleanImage(img):
     maskBlueHue =  myFiltr.doubleThreshold(hue1, BLUE_COLORS_DOWN[0] ,BLUE_COLORS_UP[0])
     maskBlueSat =  myFiltr.doubleThreshold(sat1, BLUE_COLORS_DOWN[1] ,BLUE_COLORS_UP[1])
 
+    # cv2.imshow("YH", maskYelowHue)
+    # cv2.imshow("YS", maskYelowSat)
+    # cv2.imshow("BH", maskBlueHue)
+    # cv2.imshow("BS", maskBlueSat)
+
     final_yelow_mask_image = cv2.bitwise_and(maskYelowHue, maskYelowSat)
     final_blue_mask_image  = cv2.bitwise_and(maskBlueHue, maskBlueSat)
         
@@ -50,29 +61,40 @@ def cleanImage(img):
     return yelBlueMask
     return [final_yelow_mask_image, final_blue_mask_image]
 
-
 def findTarget(img, mode=0):
     thrash = cleanImage(img)
+    cv2.imshow("Cleaned", thrash)
+    # cv2.waitKey(10000) 
     myFiltr.filterBinary(thrash)
-    contours, _ = cv2.findContours(thrash, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    counter = 0
+    cv2.imshow("binaryCleaned", thrash)
+
+    contours, _ = cv2.findContours(thrash, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS) 
+
+    findSomething =False
     for contour in contours:
-        counter+=1
-        approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)
-        if(cv2.contourArea(contour) < 500):
+        # approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)  #not needed for now
+        conturArea= cv2.contourArea(contour)
+        if(conturArea < 300):
             continue
+        # cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
+        x = contour.ravel()[0]
+        y = contour.ravel()[1] - 5
 
-        counter+=1
-        var= str(cv2.contourArea(contour))
-        cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
-        x = approx.ravel()[0]
-        y = approx.ravel()[1] - 5
-        if len(approx) == 3  and (mode == 0 or mode==2):
-            cv2.putText(img, "triangle" +var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0),3)
-        elif len(approx) > 30  and (mode == 0 or mode==1):
-            cv2.putText(img, "circle"+ var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 0),3)
+        _, radius =  cv2.minEnclosingCircle(contour)
+        size, _ = cv2.minEnclosingTriangle(contour)
 
-    if counter == 0:
+        area = pi * radius**2
+
+        if area * TOLERANCE_FOR_CIRCLE <  conturArea:
+            findSomething = True
+            cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
+            cv2.putText(img, f"TRIANGLE\{len(contour)}", (x-80, y+20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 0, 0),1)
+        if size * TOLERANCE_FOR_TRIANGLE < conturArea:
+            findSomething = True
+            cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
+            cv2.putText(img, f"CIRCLE\{len(contour)}", (x-80, y+20), cv2.FONT_HERSHEY_COMPLEX, 0.6, (0, 0, 0),1)
+
+    if not  findSomething:
         cv2.putText(img, "nothing here...", (100, 100), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 0),10)
     return img
 
@@ -104,11 +126,3 @@ def findAndDrawTriangle(img):
 
 def findAndDrawCircle(img):
     findTarget(img,2)
-
-
-
-if(__name__ == "__main__"):
-    findTarget()
-    pass
-
-
