@@ -12,4 +12,6 @@ FONT_MAIN = 'Comic Sans'
 FONT_COLOR_MAIN = '#5F1'
 BTN_COLOR_MAIN = '#fcc'
 BG_COLOR_MAIN = 'BLACK'
-BUTTON_NAMES = ['accure image', 'find objects', 'show target size', 'calculate distance']
+
+
+

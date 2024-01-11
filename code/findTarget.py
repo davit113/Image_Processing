@@ -3,113 +3,115 @@ In HSV colorspace
     yeloww hue=50~70 saturation=210~250 // in cv2 hue is about = 25~33 and saturation= 200~250
     blue   hue=185~200 saturation=175~235  // in cv2 hue is about = 92~100 and saturation= 175~240
  """
-
 """ 
     note: 
         cv2.COLOR_BGR2HSV does convertion wheere H- max value is 180.
  """
+"""                  H    S    V """
+YELOW_COLORS_DONW = [20, 150, 20]
+YELOW_COLORS_UP   = [35, 255, 255]
+
+BLUE_COLORS_DOWN = [90, 140, 20]
+BLUE_COLORS_UP   = [110, 255, 255]
+
+TOLERANCE_FOR_CIRCLE = 0.90
+TOLERANCE_FOR_TRIANGLE = 0.90
+
+
+""" on 2592x1944 picture, with scale=0.25
+
+    1. distance=1m circleAreaBlue=[5565,5605,5600,5550] circleAreaYelow=[5933,5946] triangleArea=[3310,3226]
+
+    2  distance=2m circleAreaBlue=[1498,1509,1515,1480,1514] , circleAreaYelow~= [1332(bad!),1394(bad!)], triangleArea=[814,811,823]
+                                        should be around 1400,                                       
+ """
+
+
 import numpy as np
 import cv2
 import time
-import captureImage
+from math import pi
+import math
 
-SCALEFACTOR = 1.0
 
+import code.filtering as myFiltr
+
+from cv2 import imshow as show
 from matplotlib import pyplot as plt
-extra =15
-
 
 def cleanImage(img):
     SCALEFACTOR = 1
-    # img = cv2.imread('code/new_test_img.jpg')
     img = cv2.resize(img, (0,0), fx=SCALEFACTOR, fy=SCALEFACTOR)
-    img = cv2.bilateralFilter(img, 15, 75, 75)
-    # img = cv2.GaussianBlur(img,(5,5),0)
-    cv2.imshow('blurred',img)
+    myFiltr.filterBGR(img)
+
+    # cv2.imshow("BGRCleaned", img)
 
     hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    cv2.imshow('hsv', hsv)
-
+    myFiltr.filterHSV(hsv)
     hue1,sat1,v = cv2.split(hsv)
 
-    # cv2.imshow("hue1",hue1)
-    # cv2.imshow("sat1",sat1)
-
     """ double threshholding for yelow color """
-    _, maskHue1 = cv2.threshold(hue1, 25 - extra, 255, cv2.THRESH_BINARY)
-    _, maskHue2 = cv2.threshold(hue1, 33 + extra, 255, cv2.THRESH_BINARY_INV)
-    maskYelowHue= cv2.bitwise_and(maskHue1, maskHue2)
-
     """ double threshholding for yelow saturation"""
-    _, maskSat1 = cv2.threshold(sat1, 200 - extra, 255, cv2.THRESH_BINARY)
-    _, maskSat2 = cv2.threshold(sat1, 245 + extra, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
-    maskYelowSat = cv2.bitwise_and(maskSat1, maskSat2)
-    
+    """ double threshholding for blue color """
+    """ double threshholding for blue saturation"""
+    maskYelowHue = myFiltr.doubleThreshold(hue1, YELOW_COLORS_DONW[0] ,YELOW_COLORS_UP[0])
+    maskYelowSat = myFiltr.doubleThreshold(sat1, YELOW_COLORS_DONW[1] ,YELOW_COLORS_UP[1])
+    maskBlueHue =  myFiltr.doubleThreshold(hue1, BLUE_COLORS_DOWN[0] ,BLUE_COLORS_UP[0])
+    maskBlueSat =  myFiltr.doubleThreshold(sat1, BLUE_COLORS_DOWN[1] ,BLUE_COLORS_UP[1])
+
+    # cv2.imshow("YH", maskYelowHue)
+    # cv2.imshow("YS", maskYelowSat)
+    # cv2.imshow("BH", maskBlueHue)
+    # cv2.imshow("BS", maskBlueSat)
 
     final_yelow_mask_image = cv2.bitwise_and(maskYelowHue, maskYelowSat)
-    # cv2.imshow('finalYelow', final_yelow_mask_image)
-
-    """ double threshholding for blue color """
-    _, maskHue1 = cv2.threshold(hue1, 92 - extra, 255, cv2.THRESH_BINARY)
-    _, maskHue2 = cv2.threshold(hue1, 100 + extra, 255, cv2.THRESH_BINARY_INV)
-    maskBlueHue= cv2.bitwise_and(maskHue1, maskHue2)
-
-    """ double threshholding for blue saturation"""
-    _, maskSat1 = cv2.threshold(sat1, 175 - extra, 255, cv2.THRESH_BINARY)
-    _, maskSat2 = cv2.threshold(sat1, 240 + extra, 255, cv2.THRESH_BINARY_INV) #probably not even needed here.
-    maskBlueSat = cv2.bitwise_and(maskSat1, maskSat2)
-    final_blue_mask_image = cv2.bitwise_and(maskBlueHue, maskBlueSat)
-
-    # cv2.imshow('finalBlue', final_blue_mask_image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    final_blue_mask_image  = cv2.bitwise_and(maskBlueHue, maskBlueSat)
         
     yelBlueMask = cv2.bitwise_or(final_blue_mask_image, final_yelow_mask_image)
     return yelBlueMask
     return [final_yelow_mask_image, final_blue_mask_image]
 
-
-def findTarget(img):
-    # img = captureImage.captureImage()
-    # img = cv2.imread('code/new_test_img.jpg')
-    # img = cv2.resize(img, (0,0), fx=SCALEFACTOR, fy=SCALEFACTOR)
-
-    imgGrey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, thrash = cv2.threshold(imgGrey, 100, 255, cv2.THRESH_BINARY)
+def findTarget(img, mode=0, distance=False):
     thrash = cleanImage(img)
+    cv2.imshow("Cleaned", thrash)
+    # cv2.waitKey(10000) 
+    myFiltr.filterBinary(thrash)
+    cv2.imshow("binaryCleaned", thrash)
 
-    # morphology cleaning
-    structuringElement = np.ones((5,5), np.uint8) 
-    thrash = cv2.erode(thrash, structuringElement, iterations=1)
-    thrash = cv2.dilate(thrash, structuringElement, iterations=2)
-    #####################
+    contours, _ = cv2.findContours(thrash, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_KCOS) 
 
-    # cv2.imshow("img", thrash)
-    contours, _ = cv2.findContours(thrash, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    counter = 0
+    findSomething =False
     for contour in contours:
-        counter+=1
-        approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)
-        if(cv2.contourArea(contour) < 1000):
+        # approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)  #not needed for now
+        conturArea= cv2.contourArea(contour)
+        if(conturArea < 300):
             continue
+        # cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
+        x = contour.ravel()[0]
+        y = contour.ravel()[1] - 5
 
-        counter+=1
-        var= str(cv2.contourArea(contour))
-        cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
-        x = approx.ravel()[0]
-        y = approx.ravel()[1] - 5
-        if len(approx) < 30:
-            cv2.putText(img, "triangle" +var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.1, (0, 0, 0),1)
-        else:
-            cv2.putText(img, "circle"+ var, (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 0),1)
+        _, radius =  cv2.minEnclosingCircle(contour)
+        size, _ = cv2.minEnclosingTriangle(contour)
 
-    if counter == 0:
+        area = pi * radius**2
+
+        # f = "{:.3f}".format(math.float_number)
+
+        if area * TOLERANCE_FOR_CIRCLE <  conturArea:
+            findSomething = True
+            cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
+            cv2.putText(img, f"CIR: {conturArea},dis={math.sqrt(5600/conturArea):.2f}M;", (x-80, y-30), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 0, 200),1)
+        if size * TOLERANCE_FOR_TRIANGLE < conturArea:
+            findSomething = True
+            cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
+            cv2.putText(img, f"TR: {conturArea},dis={(math.sqrt(3300/conturArea)):.2f}M;", (x-80, y), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 200, 0),1)
+
+    if not  findSomething:
         cv2.putText(img, "nothing here...", (100, 100), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 0),10)
     return img
 
 
-def testFoo(img=0):
+def testFoo(img =0):
     img = cv2.imread('code/tt.jpg', cv2.IMREAD_GRAYSCALE)
     _, mask = cv2.threshold(img, 220, 255, cv2.THRESH_BINARY_INV)
 
@@ -131,8 +133,11 @@ def testFoo(img=0):
         plt.xticks([]),plt.yticks([])
     plt.show()
 
-def if_main():
-    if(__name__ == "__main__"):
-        findTarget()
-        pass
-if_main()
+def findAndDrawTriangle(img):
+    findTarget(img,1)
+
+def findAndDrawCircle(img):
+    findTarget(img,2)
+
+def findDistance(img):
+    findTarget(img,3)
