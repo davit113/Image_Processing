@@ -23,27 +23,19 @@ TOLERANCE_FOR_TRIANGLE = 0.90
     1. distance=1m circleAreaBlue=[5565,5605,5600,5550] circleAreaYelow=[5933,5946] triangleArea=[3310,3226]
 
     2  distance=2m circleAreaBlue=[1498,1509,1515,1480,1514] , circleAreaYelow~= [1332(bad!),1394(bad!)], triangleArea=[814,811,823]
-                                        should be around 1400,                                       
+                                    should be around 1400,                                       
  """
-
 
 import numpy as np
 import cv2
-import time
-from math import pi
 import math
-
 
 import code.filtering as myFiltr
 
-from cv2 import imshow as show
 from matplotlib import pyplot as plt
 
 def cleanImage(img):
-    SCALEFACTOR = 1
-    img = cv2.resize(img, (0,0), fx=SCALEFACTOR, fy=SCALEFACTOR)
     myFiltr.filterBGR(img)
-
     # cv2.imshow("BGRCleaned", img)
 
     hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
@@ -57,7 +49,7 @@ def cleanImage(img):
     maskYelowHue = myFiltr.doubleThreshold(hue1, YELOW_COLORS_DONW[0] ,YELOW_COLORS_UP[0])
     maskYelowSat = myFiltr.doubleThreshold(sat1, YELOW_COLORS_DONW[1] ,YELOW_COLORS_UP[1])
     maskBlueHue =  myFiltr.doubleThreshold(hue1, BLUE_COLORS_DOWN[0] ,BLUE_COLORS_UP[0])
-    maskBlueSat =  myFiltr.doubleThreshold(sat1, BLUE_COLORS_DOWN[1] ,BLUE_COLORS_UP[1])
+    # maskBlueSat =  myFiltr.doubleThreshold(sat1, BLUE_COLORS_DOWN[1] ,BLUE_COLORS_UP[1]) # reusing maskYelowSat, becouse it has almos identical value
 
     # cv2.imshow("YH", maskYelowHue)
     # cv2.imshow("YS", maskYelowSat)
@@ -65,16 +57,15 @@ def cleanImage(img):
     # cv2.imshow("BS", maskBlueSat)
 
     final_yelow_mask_image = cv2.bitwise_and(maskYelowHue, maskYelowSat)
-    final_blue_mask_image  = cv2.bitwise_and(maskBlueHue, maskBlueSat)
+    final_blue_mask_image  = cv2.bitwise_and(maskBlueHue, maskYelowSat)
         
     yelBlueMask = cv2.bitwise_or(final_blue_mask_image, final_yelow_mask_image)
     return yelBlueMask
     return [final_yelow_mask_image, final_blue_mask_image]
 
-def findTarget(img, mode=0, distance=False):
+def findTarget(img, cfg):  # cfg=[bool,bool]
     thrash = cleanImage(img)
     cv2.imshow("Cleaned", thrash)
-    # cv2.waitKey(10000) 
     myFiltr.filterBinary(thrash)
     cv2.imshow("binaryCleaned", thrash)
 
@@ -82,29 +73,24 @@ def findTarget(img, mode=0, distance=False):
 
     findSomething =False
     for contour in contours:
-        # approx = cv2.approxPolyDP(contour, 0.01* cv2.arcLength(contour, True), True)  #not needed for now
         conturArea= cv2.contourArea(contour)
         if(conturArea < 300):
             continue
-        # cv2.drawContours(img, [approx], 0, (0, 0, 0), 1)
+
+        minCircleArea =  cv2.minEnclosingCircle(contour)[1]**2 * math.pi 
+        minTriangleArea= cv2.minEnclosingTriangle(contour)[0] 
+
         x = contour.ravel()[0]
         y = contour.ravel()[1] - 5
 
-        _, radius =  cv2.minEnclosingCircle(contour)
-        size, _ = cv2.minEnclosingTriangle(contour)
-
-        area = pi * radius**2
-
-        # f = "{:.3f}".format(math.float_number)
-
-        if area * TOLERANCE_FOR_CIRCLE <  conturArea:
+        if minCircleArea * TOLERANCE_FOR_CIRCLE <  conturArea and cfg[1]:
             findSomething = True
             cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
-            cv2.putText(img, f"CIR: {conturArea},dis={math.sqrt(5600/conturArea):.2f}M;", (x-80, y-30), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 0, 200),1)
-        if size * TOLERANCE_FOR_TRIANGLE < conturArea:
+            cv2.putText(img, f"CIR: {conturArea},dis={math.sqrt(5600/conturArea):.2f}M;", (x-80, y-30), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 0, 150),1)
+        if minTriangleArea * TOLERANCE_FOR_TRIANGLE < conturArea and cfg[0]:
             findSomething = True
             cv2.drawContours(img, [contour], 0, (0, 0, 0), 1)
-            cv2.putText(img, f"TR: {conturArea},dis={(math.sqrt(3300/conturArea)):.2f}M;", (x-80, y), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 200, 0),1)
+            cv2.putText(img, f"TR: {conturArea},dis={(math.sqrt(3300/conturArea)):.2f}M;", (x-80, y), cv2.FONT_HERSHEY_COMPLEX, 0.33, (0, 150, 0),1)
 
     if not  findSomething:
         cv2.putText(img, "nothing here...", (100, 100), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 0),10)
@@ -133,11 +119,3 @@ def testFoo(img =0):
         plt.xticks([]),plt.yticks([])
     plt.show()
 
-def findAndDrawTriangle(img):
-    findTarget(img,1)
-
-def findAndDrawCircle(img):
-    findTarget(img,2)
-
-def findDistance(img):
-    findTarget(img,3)

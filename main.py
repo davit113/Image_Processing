@@ -1,16 +1,18 @@
 import cv2
 import tkinter as tk
 from PIL import Image, ImageTk
-import numpy as np
 
 import code.findTarget
 
 class main:
     def __init__(self):
+
         self.video_source = 0
         self.vid = cv2.VideoCapture(self.video_source)
         self.root = tk.Tk()
         self.root.title("Object Detection")
+        self.icon = ImageTk.PhotoImage(file='assets/a3.png')
+        self.root.iconphoto(True, self.icon)
         self.canvas = tk.Canvas(self.root, width=self.vid.get(3), height=self.vid.get(4))
         self.canvas.pack()
 
@@ -26,13 +28,9 @@ class main:
         self.toggle_button = tk.Button(self.root, text="Toggle Objects", command=self.toggle_objects)
         self.toggle_button.pack(side=tk.LEFT, padx=5)
 
-        self.toggle_button = tk.Button(self.root, text="Toggle Distance", command=self.find_distance)
-        self.toggle_button.pack(side=tk.LEFT, padx=5)
-
         self.is_streaming = False
         self.is_triangle_enabled = False
         self.is_circle_enabled = False
-        self.is_distance_enabled = False
 
         self.update()
         self.root.mainloop()
@@ -52,27 +50,20 @@ class main:
         if not self.is_streaming: return
         self.is_circle_enabled = not self.is_circle_enabled
 
-    def find_distance(self):
-        if not self.is_streaming: return
-        self.is_distance_enabled = not self.is_distance_enabled
-
     def toggle_objects(self):
         if not self.is_streaming: return
-        if self.is_circle_enabled or self.is_triangle_enabled:
-            self.is_triangle_enabled = True
-            self.is_circle_enabled = True
+        if self.is_circle_enabled and self.is_triangle_enabled:
+            self.is_triangle_enabled = False
+            self.is_circle_enabled = False
         else:
             self.is_triangle_enabled = True
             self.is_circle_enabled = True
 
 
     def detect_objects(self, frame):
-        if self.is_triangle_enabled:
-            code.findTarget.findAndDrawTriangle(frame)
-        if self.is_circle_enabled:
-            code.findTarget.findAndDrawCircle(frame)
-        if self.is_distance_enabled:
-            code.findTarget.findDistance()
+        cfg  = [self.is_circle_enabled, self.is_triangle_enabled]
+        code.findTarget.findTarget(frame, cfg)
+
 
     def update(self):
         if self.is_streaming:
@@ -83,6 +74,10 @@ class main:
                 self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
             else:
                 print("error")
+        else:
+            # self.photo = ImageTk.PhotoImage(file='assets/a3.png')
+            self.canvas.create_image(-53, 5, image=self.icon , anchor=tk.NW)
+            pass
         self.root.after(100, self.update)
 
     def __del__(self):

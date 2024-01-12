@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 
-""" all filtering of BGR camptured image """
+""" all filtering of BGR captured image """
 def filterBGR(img):
     img = cv2.bilateralFilter(img, 15, 75, 75)
     img = cv2.GaussianBlur(img,(11,11),0)
@@ -43,12 +43,5 @@ def filterBinary(thrash):
     structuringElement = np.ones((5,5), np.uint8) 
     thrash = cv2.erode(thrash, structuringElement, iterations=1)
     return  cv2.dilate(thrash, structuringElement, iterations=2)
-
-
-
-def evalDistance(points, objType):{
-    
-}
-
 
 
